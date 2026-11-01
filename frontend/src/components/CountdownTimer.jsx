@@ -82,11 +82,17 @@ export function CountdownTimer({ currentCloseTime, forcedCloseTime, serverTime, 
             Current Bid Close
           </span>
         </div>
-        {isInWindow && (
-          <span className="inline-flex items-center text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Trigger Window Active ({triggerWindowMinutes}m)
-          </span>
+        {triggerWindowMinutes && (
+          isInWindow ? (
+            <span className="inline-flex items-center text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Trigger Window Active ({triggerWindowMinutes}m)
+            </span>
+          ) : (
+            <span className="inline-flex items-center text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+              Trigger Window Inactive (last {triggerWindowMinutes}m)
+            </span>
+          )
         )}
       </div>
 

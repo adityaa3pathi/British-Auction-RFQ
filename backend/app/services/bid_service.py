@@ -160,13 +160,17 @@ async def submit_bid(
         rfq.lowest_bid_id = ranks_after[0]["bid_id"]
         rfq.lowest_bid_amount = ranks_after[0]["total_price"]
 
+    bid_reason = f"Quote of ${new_total:,.2f} submitted by {supplier.name} ({carrier_name})"
+    if not extension_res.extend:
+        bid_reason += f" • {extension_res.reason}"
+
     # Log bid submission event
     bid_event = AuctionEvent(
         rfq_id=rfq_id,
         event_type=AuctionEventType.BID_SUBMITTED.value,
         bid_id=new_bid.id,
         supplier_id=supplier_id,
-        reason=f"Quote of ${new_total:,.2f} submitted by {supplier.name} ({carrier_name})",
+        reason=bid_reason,
         metadata_json=json.dumps({"total_price": new_total, "carrier": carrier_name}),
         created_at=now,
     )
