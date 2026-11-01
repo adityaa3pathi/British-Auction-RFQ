@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime, timezone, timedelta, date
 from app.database import engine, SessionLocal, Base
 from app.models.supplier import Supplier
@@ -6,13 +7,20 @@ from app.models.bid import Bid
 from app.models.event import AuctionEvent, AuctionEventType
 
 
-def seed():
+def seed(force=False):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
     try:
-        # Check if already seeded
-        if db.query(Supplier).count() > 0:
+        if force:
+            print("Clearing existing data...")
+            db.query(AuctionEvent).delete()
+            db.query(Bid).delete()
+            db.query(AuctionConfig).delete()
+            db.query(Rfq).delete()
+            db.query(Supplier).delete()
+            db.commit()
+        elif db.query(Supplier).count() > 0 and db.query(Rfq).count() > 0:
             print("Database already contains data. Skipping seed.")
             return
 
@@ -40,10 +48,10 @@ def seed():
         sup_msc = suppliers[3]
         sup_kn = suppliers[4]
 
-        # 2. RFQ 1: Active, closing in 8 minutes (INSIDE 10m trigger window - perfect for demo!)
-        rfq1_start = now - timedelta(minutes=30)
-        rfq1_close = now + timedelta(minutes=8)
-        rfq1_forced = now + timedelta(minutes=30)
+        # 2. RFQ 1: Active, closing in 20 minutes (inside 20m trigger window for testing)
+        rfq1_start = now - timedelta(minutes=15)
+        rfq1_close = now + timedelta(minutes=20)
+        rfq1_forced = now + timedelta(minutes=45)
 
         rfq1 = Rfq(
             reference_id="RFQ-2026-001",
@@ -62,7 +70,7 @@ def seed():
 
         cfg1 = AuctionConfig(
             rfq_id=rfq1.id,
-            trigger_window_minutes=10,
+            trigger_window_minutes=20,
             extension_duration_minutes=5,
             extension_trigger=ExtensionTrigger.L1_RANK_CHANGE,
         )
@@ -79,7 +87,7 @@ def seed():
             total_price=1520.00,
             transit_time_days=28,
             quote_valid_until=date(2026, 12, 15),
-            created_at=now - timedelta(minutes=25),
+            created_at=now - timedelta(minutes=10),
         )
         db.add(bid1_cma)
         db.flush()
@@ -94,7 +102,7 @@ def seed():
             total_price=1450.00,
             transit_time_days=26,
             quote_valid_until=date(2026, 12, 20),
-            created_at=now - timedelta(minutes=20),
+            created_at=now - timedelta(minutes=5),
         )
         db.add(bid1_maersk)
         db.flush()
@@ -102,11 +110,10 @@ def seed():
         rfq1.lowest_bid_id = bid1_maersk.id
         rfq1.lowest_bid_amount = 1450.00
 
-        # Events for RFQ 1
         db.add(AuctionEvent(
             rfq_id=rfq1.id,
             event_type=AuctionEventType.AUCTION_CREATED.value,
-            reason="British Auction initialized with 10m trigger window and 5m extension duration.",
+            reason="British Auction initialized with 20m trigger window and 5m extension duration.",
             new_close_time=rfq1_close,
             created_at=rfq1_start,
         ))
@@ -122,7 +129,7 @@ def seed():
             bid_id=bid1_cma.id,
             supplier_id=sup_cma.id,
             reason=f"Quote of $1,520.00 submitted by {sup_cma.name}",
-            created_at=now - timedelta(minutes=25),
+            created_at=now - timedelta(minutes=10),
         ))
         db.add(AuctionEvent(
             rfq_id=rfq1.id,
@@ -130,7 +137,7 @@ def seed():
             bid_id=bid1_maersk.id,
             supplier_id=sup_maersk.id,
             reason=f"Quote of $1,450.00 submitted by {sup_maersk.name} (New L1 Leader)",
-            created_at=now - timedelta(minutes=20),
+            created_at=now - timedelta(minutes=5),
         ))
 
         # 3. RFQ 2: Active, Any Rank Change trigger
@@ -246,4 +253,5 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    force_flag = "--force" in sys.argv or "-f" in sys.argv
+    seed(force=force_flag)

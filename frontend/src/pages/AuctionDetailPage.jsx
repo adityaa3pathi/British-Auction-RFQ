@@ -3,7 +3,7 @@ import { ArrowLeft, Clock, Sliders, Shield, RefreshCw, AlertCircle } from 'lucid
 import { fetchRfqDetails, fetchRfqEvents, fetchSuppliers } from '../api/client';
 import { useAuctionStream } from '../api/useAuctionStream';
 import { StatusBadge } from '../components/StatusBadge';
-import { CountdownTimer } from '../components/CountdownTimer';
+import { CountdownTimer, parseDate } from '../components/CountdownTimer';
 import { RankingsTable } from '../components/RankingsTable';
 import { BidModal } from '../components/BidModal';
 import { ActivityLog } from '../components/ActivityLog';
@@ -194,7 +194,7 @@ export function AuctionDetailPage({ rfqId, onBack }) {
             <div className="pt-2 border-t border-slate-200 text-xs flex justify-between font-mono text-slate-700">
               <span className="text-slate-500 font-sans">Hard Limit:</span>
               <span className="font-bold">
-                {new Date(rfq.forced_bid_close_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {new Date(parseDate(rfq.forced_bid_close_time)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             </div>
           </div>

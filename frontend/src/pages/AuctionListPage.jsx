@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, ArrowUpRight, Clock, Award, ShieldAlert } from 'lucide-react';
 import { fetchRfqs } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
+import { parseDate } from '../components/CountdownTimer';
 
 export function AuctionListPage({ onSelectRfq, onNavigateCreate }) {
   const [rfqs, setRfqs] = useState([]);
@@ -150,10 +151,10 @@ export function AuctionListPage({ onSelectRfq, onNavigateCreate }) {
                       )}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-xs text-slate-700 font-mono">
-                      {new Date(rfq.current_bid_close_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {new Date(parseDate(rfq.current_bid_close_time)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-mono">
-                      {new Date(rfq.forced_bid_close_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {new Date(parseDate(rfq.forced_bid_close_time)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
                     <td className="py-3.5 px-4 text-center whitespace-nowrap font-semibold text-slate-700">
                       {rfq.bids_count}

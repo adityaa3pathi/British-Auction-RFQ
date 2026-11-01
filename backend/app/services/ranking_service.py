@@ -1,15 +1,11 @@
+from datetime import timezone
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 from app.models.bid import Bid
 from app.models.supplier import Supplier
 
 
-def get_latest_supplier_bids(db: Session, rfq_id: str) -> List[Bid]:
-    """
-    Returns each supplier's latest bid for a given RFQ.
-    Sorted by total_price ASC, created_at ASC.
-    """
+def compute_rankings(db: Session, rfq_id: str) -> List[Dict[str, Any]]:
     all_bids = (
         db.query(Bid)
         .filter(Bid.rfq_id == rfq_id)
@@ -17,7 +13,6 @@ def get_latest_supplier_bids(db: Session, rfq_id: str) -> List[Bid]:
         .all()
     )
 
-    # Keep only the latest bid per supplier
     seen_suppliers = set()
     latest_bids = []
     for b in all_bids:
@@ -25,18 +20,13 @@ def get_latest_supplier_bids(db: Session, rfq_id: str) -> List[Bid]:
             seen_suppliers.add(b.supplier_id)
             latest_bids.append(b)
 
-    # Sort according to British Auction rules: lowest total price first, earlier bid breaks tie
     latest_bids.sort(key=lambda x: (float(x.total_price), x.created_at))
-    return latest_bids
 
-
-def compute_rankings(db: Session, rfq_id: str) -> List[Dict[str, Any]]:
-    """
-    Computes ranking snapshot: L1, L2, L3...
-    """
-    latest_bids = get_latest_supplier_bids(db, rfq_id)
     rankings = []
     for idx, bid in enumerate(latest_bids, start=1):
+        dt = bid.created_at
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
         rankings.append({
             "rank": idx,
             "rank_label": f"L{idx}",
@@ -50,6 +40,6 @@ def compute_rankings(db: Session, rfq_id: str) -> List[Dict[str, Any]]:
             "total_price": float(bid.total_price),
             "transit_time_days": bid.transit_time_days,
             "quote_valid_until": str(bid.quote_valid_until),
-            "created_at": bid.created_at.isoformat(),
+            "created_at": dt.isoformat(),
         })
     return rankings

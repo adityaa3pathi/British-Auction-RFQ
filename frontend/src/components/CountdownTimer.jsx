@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, AlertTriangle, ShieldAlert } from 'lucide-react';
 
+export function parseDate(dateStr) {
+  if (!dateStr) return 0;
+  if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+    return new Date(dateStr + 'Z').getTime();
+  }
+  return new Date(dateStr).getTime();
+}
+
 export function CountdownTimer({ currentCloseTime, forcedCloseTime, serverTime, status, triggerWindowMinutes }) {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
   const [forcedTimeLeft, setForcedTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -10,14 +18,14 @@ export function CountdownTimer({ currentCloseTime, forcedCloseTime, serverTime, 
     if (!currentCloseTime || status !== 'ACTIVE') return;
 
     // Server-time offset calibration
-    const serverTimestamp = serverTime ? new Date(serverTime).getTime() : Date.now();
+    const serverTimestamp = serverTime ? parseDate(serverTime) : Date.now();
     const localAtReceive = Date.now();
     const clockOffset = serverTimestamp - localAtReceive;
 
     function tick() {
       const now = Date.now() + clockOffset;
-      const target = new Date(currentCloseTime).getTime();
-      const forcedTarget = new Date(forcedCloseTime).getTime();
+      const target = parseDate(currentCloseTime);
+      const forcedTarget = parseDate(forcedCloseTime);
 
       const diff = Math.max(0, target - now);
       const forcedDiff = Math.max(0, forcedTarget - now);

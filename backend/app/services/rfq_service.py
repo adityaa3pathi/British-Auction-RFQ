@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -6,6 +6,14 @@ from sqlalchemy import or_
 from app.models.rfq import Rfq, AuctionConfig, RfqStatus, ExtensionTrigger
 from app.models.event import AuctionEvent, AuctionEventType
 from app.services.ranking_service import compute_rankings
+
+
+def to_utc_iso(dt: Optional[datetime]) -> Optional[str]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 def create_rfq(
@@ -20,7 +28,6 @@ def create_rfq(
     extension_duration_minutes: int,
     extension_trigger: ExtensionTrigger,
 ) -> Rfq:
-    # 1. Validation checks
     if bid_close_time <= bid_start_time:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -39,7 +46,6 @@ def create_rfq(
             detail={"code": "INVALID_AUCTION_CONFIG", "message": "Trigger window and extension duration must be greater than zero"},
         )
 
-    # Check unique reference ID
     existing = db.query(Rfq).filter(Rfq.reference_id == reference_id).first()
     if existing:
         raise HTTPException(
@@ -52,7 +58,6 @@ def create_rfq(
     close_utc = bid_close_time if bid_close_time.tzinfo else bid_close_time.replace(tzinfo=timezone.utc)
     forced_utc = forced_bid_close_time if forced_bid_close_time.tzinfo else forced_bid_close_time.replace(tzinfo=timezone.utc)
 
-    # Compute initial status
     if now >= forced_utc:
         initial_status = RfqStatus.FORCE_CLOSED
     elif now >= close_utc:
@@ -85,7 +90,6 @@ def create_rfq(
     )
     db.add(config)
 
-    # Log creation event
     event = AuctionEvent(
         rfq_id=rfq.id,
         event_type=AuctionEventType.AUCTION_CREATED.value,
@@ -109,7 +113,6 @@ def list_rfqs(
     status_filter: Optional[str] = None,
     query: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    # Lazy status refresh for accuracy
     now = datetime.now(timezone.utc)
     all_rfqs = db.query(Rfq).all()
     status_changed = False
@@ -152,10 +155,10 @@ def list_rfqs(
             "pickup_date": str(r.pickup_date),
             "is_british_auction": r.is_british_auction,
             "status": r.status.value,
-            "bid_start_time": r.bid_start_time.isoformat(),
-            "bid_close_time": r.bid_close_time.isoformat(),
-            "current_bid_close_time": r.current_bid_close_time.isoformat(),
-            "forced_bid_close_time": r.forced_bid_close_time.isoformat(),
+            "bid_start_time": to_utc_iso(r.bid_start_time),
+            "bid_close_time": to_utc_iso(r.bid_close_time),
+            "current_bid_close_time": to_utc_iso(r.current_bid_close_time),
+            "forced_bid_close_time": to_utc_iso(r.forced_bid_close_time),
             "lowest_bid_amount": float(r.lowest_bid_amount) if r.lowest_bid_amount is not None else None,
             "bids_count": len(r.bids),
             "config": {
@@ -175,7 +178,6 @@ def get_rfq_details(db: Session, rfq_id: str) -> Dict[str, Any]:
             detail={"code": "RFQ_NOT_FOUND", "message": f"RFQ {rfq_id} not found"},
         )
 
-    # Lazy status check
     now = datetime.now(timezone.utc)
     start_utc = rfq.bid_start_time if rfq.bid_start_time.tzinfo else rfq.bid_start_time.replace(tzinfo=timezone.utc)
     current_close_utc = rfq.current_bid_close_time if rfq.current_bid_close_time.tzinfo else rfq.current_bid_close_time.replace(tzinfo=timezone.utc)
@@ -190,15 +192,11 @@ def get_rfq_details(db: Session, rfq_id: str) -> Dict[str, Any]:
 
     rankings = compute_rankings(db, rfq_id)
 
-    # Trigger window calculation
-    window_start = current_close_utc - (
-        datetime.fromtimestamp(0, tz=timezone.utc) - datetime.fromtimestamp(0, tz=timezone.utc)
-    )
+    window_start = None
     if rfq.config:
-        from datetime import timedelta
         window_start = current_close_utc - timedelta(minutes=rfq.config.trigger_window_minutes)
 
-    in_trigger_window = (window_start <= now < current_close_utc) if rfq.status == RfqStatus.ACTIVE else False
+    in_trigger_window = (window_start <= now < current_close_utc) if (rfq.status == RfqStatus.ACTIVE and window_start) else False
 
     return {
         "id": rfq.id,
@@ -207,12 +205,12 @@ def get_rfq_details(db: Session, rfq_id: str) -> Dict[str, Any]:
         "pickup_date": str(rfq.pickup_date),
         "is_british_auction": rfq.is_british_auction,
         "status": rfq.status.value,
-        "bid_start_time": rfq.bid_start_time.isoformat(),
-        "bid_close_time": rfq.bid_close_time.isoformat(),
-        "current_bid_close_time": rfq.current_bid_close_time.isoformat(),
-        "forced_bid_close_time": rfq.forced_bid_close_time.isoformat(),
-        "server_time": now.isoformat(),
-        "trigger_window_start": window_start.isoformat() if rfq.config else None,
+        "bid_start_time": to_utc_iso(rfq.bid_start_time),
+        "bid_close_time": to_utc_iso(rfq.bid_close_time),
+        "current_bid_close_time": to_utc_iso(rfq.current_bid_close_time),
+        "forced_bid_close_time": to_utc_iso(rfq.forced_bid_close_time),
+        "server_time": to_utc_iso(now),
+        "trigger_window_start": to_utc_iso(window_start),
         "in_trigger_window": in_trigger_window,
         "config": {
             "trigger_window_minutes": rfq.config.trigger_window_minutes,
@@ -233,7 +231,7 @@ def get_rfq_details(db: Session, rfq_id: str) -> Dict[str, Any]:
                 "total_price": float(b.total_price),
                 "transit_time_days": b.transit_time_days,
                 "quote_valid_until": str(b.quote_valid_until),
-                "created_at": b.created_at.isoformat(),
+                "created_at": to_utc_iso(b.created_at),
             }
             for b in rfq.bids
         ],
@@ -254,10 +252,10 @@ def get_rfq_events(db: Session, rfq_id: str) -> List[Dict[str, Any]]:
             "bid_id": e.bid_id,
             "supplier_id": e.supplier_id,
             "supplier_name": e.supplier.name if e.supplier else None,
-            "old_close_time": e.old_close_time.isoformat() if e.old_close_time else None,
-            "new_close_time": e.new_close_time.isoformat() if e.new_close_time else None,
+            "old_close_time": to_utc_iso(e.old_close_time),
+            "new_close_time": to_utc_iso(e.new_close_time),
             "reason": e.reason,
-            "created_at": e.created_at.isoformat(),
+            "created_at": to_utc_iso(e.created_at),
         }
         for e in events
     ]

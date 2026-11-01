@@ -1,6 +1,8 @@
 import React from 'react';
 import { History, Clock, ArrowRight, ShieldAlert, Award, FilePlus } from 'lucide-react';
 
+import { parseDate } from './CountdownTimer';
+
 export function ActivityLog({ events = [] }) {
   if (!events || events.length === 0) {
     return (
@@ -28,7 +30,7 @@ export function ActivityLog({ events = [] }) {
 
   function formatTime(iso) {
     if (!iso) return '';
-    const d = new Date(iso);
+    const d = new Date(parseDate(iso));
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
