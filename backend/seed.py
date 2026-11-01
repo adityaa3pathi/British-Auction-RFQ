@@ -48,10 +48,10 @@ def seed(force=False):
         sup_msc = suppliers[3]
         sup_kn = suppliers[4]
 
-        # 2. RFQ 1: Active, closing in 8 minutes (inside 8m trigger window)
-        rfq1_start = now - timedelta(minutes=15)
-        rfq1_close = now + timedelta(minutes=8)
-        rfq1_forced = now + timedelta(minutes=25)
+        # 2. RFQ 1: Active, closing in 10 minutes (inside 10m trigger window as per assignment spec)
+        rfq1_start = now - timedelta(minutes=20)
+        rfq1_close = now + timedelta(minutes=10)
+        rfq1_forced = now + timedelta(minutes=30)
 
         rfq1 = Rfq(
             reference_id="RFQ-2026-001",
@@ -70,8 +70,8 @@ def seed(force=False):
 
         cfg1 = AuctionConfig(
             rfq_id=rfq1.id,
-            trigger_window_minutes=8,
-            extension_duration_minutes=3,
+            trigger_window_minutes=10,
+            extension_duration_minutes=5,
             extension_trigger=ExtensionTrigger.L1_RANK_CHANGE,
         )
         db.add(cfg1)
