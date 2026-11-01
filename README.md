@@ -6,7 +6,7 @@ This is my submission for the AI Engineer Internship assignment. It implements a
 
 ## 🌐 Live Demo & Deployment Links
 
-- **Live Frontend (Vercel)**: [https://british-auction-rfq.vercel.app](https://british-auction-rfq.vercel.app)
+- **Live Frontend (Vercel)**: [https://british-rfq-auction.vercel.app](https://british-rfq-auction.vercel.app)
 - **GitHub Repository**: [https://github.com/adityaa3pathi/British-Auction-RFQ](https://github.com/adityaa3pathi/British-Auction-RFQ)
 - **Local Dev Server**: `http://localhost:5173` | **API Swagger Docs**: `http://localhost:8000/docs`
 
