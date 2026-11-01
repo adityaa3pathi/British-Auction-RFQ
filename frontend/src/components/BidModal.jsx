@@ -63,7 +63,7 @@ export function BidModal({ rfqId, suppliers = [], existingBids = [], onSuccess }
       setSuccessNotice(
         res.extended
           ? `🎉 Quote submitted! British Auction triggered: ${res.extension_reason}`
-          : '✅ Quote submitted! (Auction did not extend because this supplier was already holding L1 rank. Under L1_RANK_CHANGE, a competitor must overtake 1st place to trigger an extension).'
+          : `✅ Quote submitted! (Auction did not extend: ${res.extension_reason})`
       );
       // Decrement freight by 50 so next potential bid is pre-filled validly without red alert
       setFreightCharges((prev) => Math.max(0, parseFloat(prev) - 50));
