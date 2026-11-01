@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+export const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : '/api';
 
 export async function fetchRfqs(status = 'ALL', query = '') {
   const params = new URLSearchParams();

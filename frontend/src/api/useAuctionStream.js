@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { API_BASE } from './client';
 
 export function useAuctionStream(rfqId, onEvent) {
   const [isConnected, setIsConnected] = useState(false);
@@ -12,7 +13,7 @@ export function useAuctionStream(rfqId, onEvent) {
     let reconnectTimeout = null;
 
     function connect() {
-      eventSource = new EventSource(`/api/rfqs/${rfqId}/stream`);
+      eventSource = new EventSource(`${API_BASE}/rfqs/${rfqId}/stream`);
 
       eventSource.onopen = () => {
         setIsConnected(true);
