@@ -48,10 +48,10 @@ def seed(force=False):
         sup_msc = suppliers[3]
         sup_kn = suppliers[4]
 
-        # 2. RFQ 1: Active, closing in 20 minutes (inside 20m trigger window for testing)
+        # 2. RFQ 1: Active, closing in 8 minutes (inside 8m trigger window)
         rfq1_start = now - timedelta(minutes=15)
-        rfq1_close = now + timedelta(minutes=20)
-        rfq1_forced = now + timedelta(minutes=45)
+        rfq1_close = now + timedelta(minutes=8)
+        rfq1_forced = now + timedelta(minutes=25)
 
         rfq1 = Rfq(
             reference_id="RFQ-2026-001",
@@ -70,8 +70,8 @@ def seed(force=False):
 
         cfg1 = AuctionConfig(
             rfq_id=rfq1.id,
-            trigger_window_minutes=20,
-            extension_duration_minutes=5,
+            trigger_window_minutes=8,
+            extension_duration_minutes=3,
             extension_trigger=ExtensionTrigger.L1_RANK_CHANGE,
         )
         db.add(cfg1)
@@ -140,10 +140,10 @@ def seed(force=False):
             created_at=now - timedelta(minutes=5),
         ))
 
-        # 3. RFQ 2: Active, Any Rank Change trigger
-        rfq2_start = now - timedelta(minutes=15)
-        rfq2_close = now + timedelta(minutes=45)
-        rfq2_forced = now + timedelta(hours=2)
+        # 3. RFQ 2: Active, closing in 6 minutes
+        rfq2_start = now - timedelta(minutes=10)
+        rfq2_close = now + timedelta(minutes=6)
+        rfq2_forced = now + timedelta(minutes=15)
 
         rfq2 = Rfq(
             reference_id="RFQ-2026-002",
@@ -162,8 +162,8 @@ def seed(force=False):
 
         cfg2 = AuctionConfig(
             rfq_id=rfq2.id,
-            trigger_window_minutes=15,
-            extension_duration_minutes=10,
+            trigger_window_minutes=5,
+            extension_duration_minutes=2,
             extension_trigger=ExtensionTrigger.ANY_RANK_CHANGE,
         )
         db.add(cfg2)
