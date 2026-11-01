@@ -48,16 +48,20 @@ def evaluate_extension(
         trigger_details = "New bid received during trigger window"
 
     elif "ANY_RANK_CHANGE" in trigger_str:
-        # Check if any supplier who previously had a rank changed position
-        prev_ranks = {r["supplier_id"]: r["rank"] for r in ranks_before}
-        rank_changed = False
-        for curr in ranks_after:
-            sup_id = curr["supplier_id"]
-            if sup_id in prev_ranks and prev_ranks[sup_id] != curr["rank"]:
-                rank_changed = True
-                break
-        fired = rank_changed
-        trigger_details = "Supplier ranking shifted during trigger window" if fired else "No existing supplier rank changed"
+        if not ranks_before and ranks_after:
+            fired = True
+            trigger_details = "First competitive bid placed, establishing initial rank"
+        else:
+            # Check if any supplier who previously had a rank changed position
+            prev_ranks = {r["supplier_id"]: r["rank"] for r in ranks_before}
+            rank_changed = False
+            for curr in ranks_after:
+                sup_id = curr["supplier_id"]
+                if sup_id in prev_ranks and prev_ranks[sup_id] != curr["rank"]:
+                    rank_changed = True
+                    break
+            fired = rank_changed
+            trigger_details = "Supplier ranking shifted during trigger window" if fired else "No existing supplier rank changed"
 
     elif "L1_RANK_CHANGE" in trigger_str:
         l1_before = ranks_before[0]["supplier_id"] if ranks_before else None
